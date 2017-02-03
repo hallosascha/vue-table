@@ -11,9 +11,7 @@
                                     <input type="checkbox" @change="toggleAllCheckboxes($event.target.checked, field.name)"
                                         :checked="checkCheckboxesState(field.name)">
                                 </th>
-                                <th v-if="extractName(field.name) ==
-                                '__component' || extractName(field.name) ==
-                                '__compound'"
+                                <th v-if="extractName(field.name) == '__component' || extractName(field.name) == '__compound'"
                                     @click="orderBy(field, $event)"
                                     class="{{field.titleClass || ''}} {{isSortable(field) ? 'sortable' : ''}}">
                                     {{field.title || ''}}
@@ -21,7 +19,7 @@
                                        class="{{ sortIcon(field) }}"
                                        :style="{opacity: sortIconOpacity(field)}"></i>
                                 </th>
-                                <th v-if="notIn(extractName(field.name), ['__checkbox', '__component'])"
+                                <th v-if="notIn(extractName(field.name), ['__checkbox', '__component', '__compound'])"
                                     id="{{field.name}}" class="{{field.titleClass || ''}}">
                                     {{field.title || ''}}
                                 </th>
@@ -63,7 +61,7 @@
                                         <component :is="extractArgs(field.name)" :row-data="item" :row-index="itemNumber"></component>
                                     </td>
                                     <td v-if="extractName(field.name) == '__compound'" class="{{field.dataClass}}">
-                                        {{{ callCallback(field, item, true) || console.warn("You have to specify a callback for the compound fields")}}}
+                                        {{{ callCallback(field, item, true) }}}
                                     </td>
                                 </template>
                                 <template v-else>
@@ -662,8 +660,13 @@ export default {
         callCallback: function(field, item, passRowData) {
             passRowData = typeof passRowData !== 'undefined' ? passRowData : false
 
-            if ( ! this.hasCallback(field))
+            if ( ! this.hasCallback(field)) {
+                if ( this.extractName(field.name) == '__compound') {
+                    console.warn("You have to specify a callback for the compound fields")
+                }
+
                 return
+            }
 
             var args = field.callback.split('|')
             var func = args.shift()
@@ -679,7 +682,6 @@ export default {
                         : this.$parent[func].call(this.$parent, this.getObjectValue(item, field.name))
                 }
             }
-        }
 
             return null
         },
