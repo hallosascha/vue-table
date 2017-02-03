@@ -11,7 +11,9 @@
                                     <input type="checkbox" @change="toggleAllCheckboxes($event.target.checked, field.name)"
                                         :checked="checkCheckboxesState(field.name)">
                                 </th>
-                                <th v-if="extractName(field.name) == '__component'"
+                                <th v-if="extractName(field.name) ==
+                                '__component' || extractName(field.name) ==
+                                '__compound'"
                                     @click="orderBy(field, $event)"
                                     class="{{field.titleClass || ''}} {{isSortable(field) ? 'sortable' : ''}}">
                                     {{field.title || ''}}
@@ -59,6 +61,9 @@
                                     </td>
                                     <td v-if="extractName(field.name) == '__component'" class="{{field.dataClass}}">
                                         <component :is="extractArgs(field.name)" :row-data="item" :row-index="itemNumber"></component>
+                                    </td>
+                                    <td v-if="extractName(field.name) == '__compound'" class="{{field.dataClass}}">
+                                        {{{ callCallback(field, item, true) || console.warn("You have to specify a callback for the compound fields")}}}
                                     </td>
                                 </template>
                                 <template v-else>
@@ -654,7 +659,9 @@ export default {
         hasCallback: function(item) {
             return item.callback ? true : false
         },
-        callCallback: function(field, item) {
+        callCallback: function(field, item, passRowData) {
+            passRowData = typeof passRowData !== 'undefined' ? passRowData : false
+
             if ( ! this.hasCallback(field))
                 return
 
@@ -662,10 +669,17 @@ export default {
             var func = args.shift()
 
             if (typeof this.$parent[func] == 'function') {
-                return (args.length > 0)
-                    ? this.$parent[func].apply(this.$parent, [this.getObjectValue(item, field.name)].concat(args))
-                    : this.$parent[func].call(this.$parent, this.getObjectValue(item, field.name))
+                if (passRowData) {
+                    return (args.length > 0)
+                        ? this.$parent[func].apply(this.$parent, [item].concat(args))
+                        : this.$parent[func].call(this.$parent, item)
+                } else {
+                    return (args.length > 0)
+                        ? this.$parent[func].apply(this.$parent, [this.getObjectValue(item, field.name)].concat(args))
+                        : this.$parent[func].call(this.$parent, this.getObjectValue(item, field.name))
+                }
             }
+        }
 
             return null
         },
